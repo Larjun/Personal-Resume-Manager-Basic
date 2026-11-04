@@ -1,0 +1,1 @@
+ALTER TABLE "bullet_variants" DROP COLUMN "source";

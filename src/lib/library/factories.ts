@@ -1,5 +1,5 @@
 import { newDegree, newId } from "@/lib/resume/factories";
-import type { LibraryItemData, LibraryKind, VariantSource } from "./schema";
+import type { LibraryItemData, LibraryKind } from "./schema";
 
 /** Blank fields for a new library item of `kind`. */
 export function emptyLibraryItem(kind: LibraryKind): LibraryItemData {
@@ -18,12 +18,11 @@ export function emptyLibraryItem(kind: LibraryKind): LibraryItemData {
   }
 }
 
-/** A variant typed in the editor. The server ignores `source` and stores "user" for new variants. */
+/** A variant typed in the editor. */
 export const newVariant = (text = "", label: string | null = null) => ({
   id: newId(),
   text,
   label,
-  source: "user" as VariantSource,
 });
 
 export const newLibraryBullet = (text = "") => ({ id: newId(), tags: [] as string[], variants: [newVariant(text)] });

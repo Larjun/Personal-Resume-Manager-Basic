@@ -1,6 +1,6 @@
 import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { storedPool } from "@/lib/library/pool";
-import { LIBRARY_FIELDS_SCHEMAS, LibraryKindSchema, type LibraryItemData, type VariantSource } from "@/lib/library/schema";
+import { LIBRARY_FIELDS_SCHEMAS, LibraryKindSchema, type LibraryItemData } from "@/lib/library/schema";
 import type { DbOrTx } from "./resume-links";
 import { bulletVariants, libraryBullets, libraryItems, resumeItemLinks } from "./schema";
 
@@ -8,7 +8,7 @@ import { bulletVariants, libraryBullets, libraryItems, resumeItemLinks } from ".
 // scripts can use them; app code goes through src/server/library.ts, which
 // gets the user id from requireUser().
 
-export type LibraryVariant = { id: string; text: string; label: string | null; source: VariantSource };
+export type LibraryVariant = { id: string; text: string; label: string | null };
 export type LibraryBullet = { id: string; tags: string[]; variants: LibraryVariant[] };
 
 export type LibraryItem = LibraryItemData & {
@@ -68,7 +68,6 @@ export async function loadLibraryItems(db: DbOrTx, userId: string, itemIds?: str
             position: bulletVariants.position,
             text: bulletVariants.text,
             label: bulletVariants.label,
-            source: bulletVariants.source,
           })
           .from(bulletVariants)
           .where(
@@ -79,7 +78,6 @@ export async function loadLibraryItems(db: DbOrTx, userId: string, itemIds?: str
             ),
           );
 
-  const sourceOf = new Map(variants.map((v) => [v.id, v.source]));
   const usedIn = new Map(usage.map((u) => [u.itemId, u.n]));
   const bulletsByItem = groupBy(bullets, (b) => b.itemId);
   const variantsByBullet = groupBy(variants, (v) => v.bulletId);
@@ -95,10 +93,7 @@ export async function loadLibraryItems(db: DbOrTx, userId: string, itemIds?: str
       id: row.id,
       ...({ kind, fields: LIBRARY_FIELDS_SCHEMAS[kind].parse(row.fields) } as LibraryItemData),
       tags: row.tags,
-      bullets: pool.map((b) => ({
-        ...b,
-        variants: b.variants.map((v) => ({ ...v, source: sourceOf.get(v.id) ?? "user" })),
-      })),
+      bullets: pool,
       usedIn: usedIn.get(row.id) ?? 0,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,

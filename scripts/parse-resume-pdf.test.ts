@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseLines, parseResumePdf, type PdfLine } from "./parse-resume-pdf";
@@ -88,17 +88,14 @@ describe("parseLines: publications", () => {
   });
 });
 
-describe("parseResumePdf(seed/resume.pdf)", () => {
-  it("matches the snapshot", async () => {
-    const data = new Uint8Array(readFileSync(path.resolve(__dirname, "../seed/resume.pdf")));
-    const content = await parseResumePdf(data, counter());
-    expect(content.sections.map((s) => [s.type, s.heading])).toEqual([
-      ["education", "Education"],
-      ["summary", "Summary"],
-      ["entries", "Experience"],
-      ["entries", "Projects"],
-      ["skills", "Skills & Technologies"],
-    ]);
-    expect(content).toMatchSnapshot();
+// seed/ is gitignored (it holds a real resume), so this only runs where one has been added.
+// No snapshot: it would commit that resume's contents.
+const SEED_PDF = path.resolve(__dirname, "../seed/resume.pdf");
+
+describe.skipIf(!existsSync(SEED_PDF))("parseResumePdf(seed/resume.pdf)", () => {
+  it("parses a name and at least one section", async () => {
+    const content = await parseResumePdf(new Uint8Array(readFileSync(SEED_PDF)), counter());
+    expect(content.header.name).not.toBe("");
+    expect(content.sections.length).toBeGreaterThan(0);
   });
 });

@@ -195,7 +195,7 @@ export async function pushBulletToLibrary(input: z.input<typeof PushBulletSchema
       id = newId();
       await tx
         .insert(bulletVariants)
-        .values({ id, userId: user.id, bulletId: bullet.id, position: (last ?? -1) + 1, text, label: null, source: "user" });
+        .values({ id, userId: user.id, bulletId: bullet.id, position: (last ?? -1) + 1, text, label: null });
     }
 
     await tx
@@ -268,7 +268,7 @@ async function writePool(tx: DbOrTx, userId: string, itemId: string, plan: PoolW
     await tx.update(libraryBullets).set({ position, tags }).where(ownBullet(id));
   }
   if (plan.insertVariants.length > 0) {
-    await tx.insert(bulletVariants).values(plan.insertVariants.map((v) => ({ ...v, userId, source: "user" as const })));
+    await tx.insert(bulletVariants).values(plan.insertVariants.map((v) => ({ ...v, userId })));
   }
   for (const { id, ...rest } of plan.updateVariants) {
     await tx.update(bulletVariants).set(rest).where(ownVariant(id));

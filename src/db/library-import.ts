@@ -35,7 +35,7 @@ export async function importResumeIntoLibrary(
       bullets.map((b, i) => ({ id: b.id, userId, itemId, position: start + i, tags: b.tags }));
     const variantRows = (bullets: PlannedBullet[]) =>
       bullets.flatMap((b) =>
-        b.variants.map((v, i) => ({ id: v.id, userId, bulletId: b.id, position: i, text: v.text, label: v.label, source: "user" as const })),
+        b.variants.map((v, i) => ({ id: v.id, userId, bulletId: b.id, position: i, text: v.text, label: v.label })),
       );
 
     if (plan.create.length > 0) {

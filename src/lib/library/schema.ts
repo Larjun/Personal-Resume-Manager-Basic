@@ -36,17 +36,13 @@ export type LibraryItemData = { [K in LibraryKind]: { kind: K; fields: LibraryFi
 /** Kinds that have a bullet pool (the others are fields only). */
 export const KINDS_WITH_BULLETS: readonly LibraryKind[] = ["experience", "project", "publication"];
 
-export const VARIANT_SOURCES = ["user", "ai"] as const;
-export type VariantSource = (typeof VARIANT_SOURCES)[number];
-
 export const LibraryItemIdSchema = z.uuid();
 
 export const TagsSchema = z.array(z.string().max(MAX_TAG_LENGTH * 4)).max(200).transform(normalizeTags);
 
 // ── Bullet pool, as the editor sends it ────────────────────────────────
 // Ids are created client-side (crypto.randomUUID) like every other entity.
-// Array order is the stored order. `source` is server-controlled: new variants
-// saved by the editor are "user"; existing ones keep theirs.
+// Array order is the stored order.
 
 export const MAX_BULLETS_PER_ITEM = 200;
 export const MAX_VARIANTS_PER_BULLET = 20;

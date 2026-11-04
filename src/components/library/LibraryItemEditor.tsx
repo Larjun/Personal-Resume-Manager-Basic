@@ -274,14 +274,6 @@ function BulletCard({
                 value={variant.text}
                 onChange={(v) => update((b) => void (b.variants[j].text = v))}
               />
-              {variant.source === "ai" && (
-                <span
-                  className="mt-1.5 shrink-0 rounded bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700"
-                  title="Written by AI"
-                >
-                  AI
-                </span>
-              )}
               {bullet.variants.length > 1 && (
                 <IconButton label="Delete variant" tone="danger" onClick={() => update((b) => void b.variants.splice(j, 1))}>
                   <TrashIcon />

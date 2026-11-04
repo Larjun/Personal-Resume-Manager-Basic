@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { index, integer, jsonb, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { authUsers } from "drizzle-orm/supabase";
-import type { LibraryFields, LibraryKind, VariantSource } from "@/lib/library/schema";
+import type { LibraryFields, LibraryKind } from "@/lib/library/schema";
 import type { PageSize, ResumeContent } from "@/lib/resume/schema";
 
 // Every user-data table: user_id → auth.users (cascade), indexed, and RLS on with
@@ -81,7 +81,7 @@ export const libraryBullets = pgTable(
   (t) => [index("library_bullets_user_id_idx").on(t.userId), index("library_bullets_item_id_idx").on(t.itemId)],
 ).enableRLS();
 
-/** One wording of a bullet ("short", "detailed", an AI rewrite…). */
+/** One wording of a bullet ("short", "detailed"…). */
 export const bulletVariants = pgTable(
   "bullet_variants",
   {
@@ -95,7 +95,6 @@ export const bulletVariants = pgTable(
     position: integer("position").notNull(),
     text: text("text").notNull(),
     label: text("label"),
-    source: text("source").$type<VariantSource>().notNull().default("user"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("bullet_variants_user_id_idx").on(t.userId), index("bullet_variants_bullet_id_idx").on(t.bulletId)],
