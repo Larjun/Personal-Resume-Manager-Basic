@@ -8,7 +8,7 @@ A web app for building and maintaining resumes. You edit structured content on t
 
 The work happens in stages. Keep the data model structured so that later stages can build on it.
 
-- **Stage 1 (done): non-AI resume editor**
+- **Stage 1 (done): resume editor**
   - **1a: list and data model.** Create, rename, duplicate, delete and open resumes. Drizzle schema on Supabase Postgres. Seed script that parses `seed/resume.pdf`.
   - **1b: editor.** Structured forms for each section type. Sections, entries, bullets and contacts can be reordered with dnd-kit. Section headings can be renamed. Section types: header (name, email, phone, location as plain text, plus links with a URL), summary, entries (experience/projects), publications (title, authors, venue, date, link, optional bullets), education, skills. Entries and papers collapse (closed by default) and have an include checkbox (`visible`): unchecked items stay in the editor but are left out of the resume, and a section whose items are all unchecked disappears. A4/Letter choice per resume. Debounced autosave.
   - **1c: pagination.** Measure blocks off-screen and place them onto fixed-size pages with keep-together rules. Page numbers and page count appear in the preview UI.
@@ -18,17 +18,9 @@ The work happens in stages. Keep the data model structured so that later stages 
   - **2b: add from library.** "+ From library" in every resume section's header opens a picker limited to the kind that section takes. Checked items are copied in with the chosen bullets and wording of each. Items already in the resume show checked and locked; they can't be added twice.
   - **2c: sync.** "Library updated" + "Pull latest" (word diff via the `diff` package), "Update library" on bullets edited in a resume (replace the wording or save as a new variant), "Source deleted".
   - **2d: import and tags.** "Import into library" on a resume (`npm run library:import` from the terminal), tag input with autocomplete, tag alias map.
-- **Later stages** are specified in `docs/stage-prompts.md`, one prompt per stage:
+- **Stage prompts** for 1.5 and 2 are in `docs/stage-prompts.md`:
   - 1.5 (done) auth (Supabase: email + Google) and account settings
   - 2 (done) master library: items, bullet pool, variants, tags. This is why every entity has a stable `id`.
-  - 3 AI resume parsing and usage logging
-  - 3.5 usage dashboard and limits
-  - 4 AI bullet writing
-  - 5 job postings and tailored resumes
-  - 6 grade and revise
-  - 7 resume collection, versions and PDF downloads
-
-  No AI code exists before Stage 3.
 
 Work proceeds milestone by milestone. Stop after each one so the user can test and commit.
 
@@ -156,7 +148,7 @@ The app depends on these settings; they aren't in code. Redo them for each envir
 - **Tables** (all follow the `resumes` pattern: `user_id` cascade, indexed, RLS on):
   - `library_items`: `kind`, `fields` jsonb, `tags` text[], `updated_at`. Kinds are experience, project, publication, education, skills and summary. `fields` is validated by `LIBRARY_FIELDS_SCHEMAS[kind]` (`src/lib/library/schema.ts`), which picks from the resume content schemas, so copying is field for field.
   - `library_bullets`: `item_id` (cascade), `position`, `tags`. Only experience, project and publication items have a bullet pool (`KINDS_WITH_BULLETS`). A pool holds more bullets than any one resume uses.
-  - `bullet_variants`: alternative wordings of a bullet: `bullet_id` (cascade), `position`, `text`, `label` (optional, e.g. "short"), `source` (`user` | `ai`, set by the server; AI stages will add `ai` variants and never overwrite the user's text).
+  - `bullet_variants`: alternative wordings of a bullet: `bullet_id` (cascade), `position`, `text`, `label` (optional, e.g. "short").
   - `resume_item_links`: which library items each resume copied from. **Derived** from `resumes.content`: `syncResumeLinks()` rewrites a resume's rows in the same transaction as every content write (autosave, duplicate, seed, import). Never write it anywhere else. "Used in N resumes" counts these rows.
 - **Saving an item:** `saveLibraryItem` takes fields, tags and/or the whole bullet pool, and writes them in one transaction under a row lock. Bullet and variant ids are created client-side like content ids. `planPoolWrites` (pure) diffs the pool and writes only changed rows. An id that isn't one of the item's rows is planned as an insert, so another item's or user's id fails on its primary key instead of being overwritten.
 - **`library_items.updated_at` means "something a resume copies changed":** fields, bullet order, variant text or labels. Tag edits never move it, so retagging never flags resumes as "Library updated".
