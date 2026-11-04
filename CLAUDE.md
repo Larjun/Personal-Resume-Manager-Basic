@@ -22,7 +22,7 @@ The work happens in stages. Keep the data model structured so that later stages 
   - 1.5 (done) auth (Supabase: email + Google) and account settings
   - 2 (done) master library: items, bullet pool, variants, tags. This is why every entity has a stable `id`.
 
-Work proceeds milestone by milestone. Stop after each one so the user can test and commit.
+Work proceeds milestone by milestone. Stop after each one so the user can test and commit. Commits go on a branch and reach `main` through a PR; the ruleset requires the CI checks (see README "CI and deploys").
 
 ## Stack
 
@@ -42,9 +42,11 @@ npm run db:migrate    # apply migrations to the DATABASE_URL database
 npm run seed          # create/find the dev user (SEED_USER_*), upsert the seed resume it owns
 npm run library:import [-- <resume-id>]  # import a resume (default: the seed) into its owner's library; safe to re-run
 npm test              # vitest
-npm run lint
-npx tsc --noEmit      # typecheck
+npm run lint          # --max-warnings=0
+npm run typecheck     # next typegen && tsc --noEmit
 ```
+
+The pre-commit hook (`.husky/pre-commit`) runs gitleaks on staged changes and eslint on staged files. Don't bypass it with `--no-verify`.
 
 ## Layout
 
@@ -137,6 +139,8 @@ The app depends on these settings; they aren't in code. Redo them for each envir
   - Delete uses the admin API; FK cascades remove the user's rows.
 - **Service-role key** (`SUPABASE_SERVICE_ROLE_KEY`) is used only via `src/lib/supabase/admin.ts` (`server-only`) and the seed script. Never `NEXT_PUBLIC_`.
 - **Schema changes** go through `src/db/schema.ts`, then `npm run db:generate` and `npm run db:migrate`. Never edit tables in the Supabase dashboard. Drizzle only manages the `public` schema; Supabase owns `auth`, `storage` and the rest.
+- **Migrations must be backward-compatible.** CI's `migrate` job applies them on `main` before Vercel moves the production domain, so the previous build runs against the new schema for a while. Rename or drop in two PRs: add the new shape, then remove the old one. CI fails if `schema.ts` changes without a generated migration.
+- **Build-time env:** `src/db/index.ts` and `src/lib/supabase/env.ts` throw at import when their env vars are unset, so `next build` needs them. CI passes placeholders; keep the clients lazy (no connection at import) so that keeps working.
 - **Ids:** resume and library item ids are UUIDs. Validate them with `ResumeIdSchema` / `LibraryItemIdSchema` before querying, because Postgres throws on a malformed UUID.
 - **Pure logic** (`paginate`, parsers, schema helpers, the `src/lib/library/` modules, tags) gets vitest tests next to the code as `*.test.ts`.
 - **Autosave:** `useAutosave(id, initial, adapter)` debounces saves for both editors. Adapters (`resumeAutosave`, `libraryAutosave`) are module-level constants so the hook's callbacks stay stable. Anything that saves a resume on the server while its editor is open (Import into library) must `flush()` first, lock the editor (`inert`) while it runs, and load the returned content into the editor, or the next autosave overwrites the server's change.

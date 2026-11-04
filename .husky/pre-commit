@@ -1,0 +1,9 @@
+# Secret scan of the staged changes. CI scans the full history too, so a
+# machine without gitleaks gets a warning instead of a blocked commit.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --pre-commit --staged --redact --no-banner --verbose
+else
+  echo "pre-commit: gitleaks not installed (brew install gitleaks); skipping secret scan. CI still scans." >&2
+fi
+
+npx lint-staged

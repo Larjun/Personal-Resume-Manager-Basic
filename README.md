@@ -17,8 +17,9 @@ Next.js 16 (App Router), React 19, TypeScript, Tailwind v4, Supabase (Postgres a
 
 ## Requirements
 
-- Node.js 20.9 or newer
+- Node.js 20.9 or newer (CI uses the version in `.nvmrc`)
 - A [Supabase](https://supabase.com) project (the free tier is enough)
+- [gitleaks](https://github.com/gitleaks/gitleaks) for the pre-commit secret scan (`brew install gitleaks`). Without it the hook warns and skips the scan.
 
 ## Setup
 
@@ -78,9 +79,28 @@ npm run db:migrate    # apply migrations to the DATABASE_URL database
 npm run seed          # create the dev user and import a sample resume
 npm run library:import [-- <resume-id>]  # import a resume (default: the seed) into its owner's library
 npm test              # unit tests (vitest)
-npm run lint
+npm run lint          # fails on warnings too
 npm run typecheck
 ```
+
+`npm install` sets up a pre-commit hook (husky) that scans staged changes with gitleaks and lints staged files.
+
+## CI and deploys
+
+`main` only takes pull requests. Every PR runs these checks in GitHub Actions (`.github/workflows/ci.yml`), and all of them must pass before it can merge:
+
+| Check | What it runs |
+| --- | --- |
+| `lint` | `npm run lint` |
+| `typecheck` | `npm run typecheck` |
+| `test` | `npm test` |
+| `build` | `npm run build` with placeholder env values (nothing connects during the build) |
+| `migrations` | `drizzle-kit check`, and fails if `src/db/schema.ts` has changes without a committed migration |
+| `gitleaks` | a secret scan of the full git history |
+
+Production runs on Vercel from `main`. After a merge, the `migrate` job applies pending migrations to the production database, and Vercel waits for it and the checks above (Deployment Checks) before moving the production domain to the new build. Its `DATABASE_URL` is the session pooler URL, stored as a secret in the `production` GitHub environment.
+
+**Migrations must be backward-compatible.** They run while the previous build is still serving traffic. To rename or drop a column, add the new shape in one PR and remove the old one in a later PR.
 
 ## Notes
 
